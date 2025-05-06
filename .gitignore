@@ -1,0 +1,11 @@
+# Dependências
+node_modules/
+# Arquivos de sessão do WhatsApp
+.wwebjs_auth/
+.wwebjs_cache/
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+# Logs
+*.log
+npm-debug.log*
