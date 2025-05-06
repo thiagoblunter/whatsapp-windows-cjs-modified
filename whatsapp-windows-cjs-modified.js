@@ -1,6 +1,45 @@
 // Importando a biblioteca whatsapp-web.js usando CommonJS
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+const makeWASocket = require("@whiskeysockets/baileys").default;
+const { useSingleFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
+const { Boom } = require("@hapi/boom");
+const qrcode = require("qrcode-terminal");
+
+const { state, saveState } = useSingleFileAuthState("./auth_info.json");
+
+async function startSock() {
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true, // Mostra o QR no terminal
+    });
+
+    sock.ev.on("connection.update", (update) => {
+        const { connection, lastDisconnect, qr } = update;
+
+        if (qr) {
+            qrcode.generate(qr, { small: true });
+        }
+
+        if (connection === "close") {
+            const shouldReconnect =
+                lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            console.log("Conexão encerrada. Reconectar?", shouldReconnect);
+            if (shouldReconnect) {
+                startSock();
+            }
+        } else if (connection === "open") {
+            console.log("Conexão aberta com sucesso");
+        }
+    });
+
+    sock.ev.on("creds.update", saveState);
+
+    return sock;
+}
+
+startSock();
+
+
 
 // Criando o cliente WhatsApp com salvar sessão
 const client = new Client({
